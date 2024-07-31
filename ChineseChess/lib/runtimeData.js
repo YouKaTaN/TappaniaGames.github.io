@@ -20,8 +20,8 @@ const runtimeData = (function () {
         streamingURL: "streaming",
 
         // Aspect ratio.
-        desktopAspectRatio: 1.777778,
-        mobileAspectRatio: 0.45,
+        desktopAspectRatio: 1,
+        mobileAspectRatio: 1,
 
         // Debug mode.
         debugMode: false,
