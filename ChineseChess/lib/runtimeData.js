@@ -5,7 +5,7 @@ const runtimeData = (function () {
         // Basic information.
         companyName: "TappaniaGames",
         productName: "YCC",
-        productVersion: "1.17",
+        productVersion: "1.18",
         sdkVersion: "3.16.3",
         productDescription: "",
 
@@ -20,8 +20,8 @@ const runtimeData = (function () {
         streamingURL: "streaming",
 
         // Aspect ratio.
-        desktopAspectRatio: 1,
-        mobileAspectRatio: 1,
+        desktopAspectRatio: -1,
+        mobileAspectRatio: -1,
 
         // Debug mode.
         debugMode: false,
