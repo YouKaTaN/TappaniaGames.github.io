@@ -1,69 +1,103 @@
-const aspectRatio = (function () {
+class AspectRatio {
 
-	let gameCanvas = document.querySelector("#unity-canvas");
-	let aspectRatio = 1;
+	constructor(mobileAspectRatio, desktopAspectRatio) {
+		// Banner advertisement fields.
+		this.rightOffset = 0;
+		this.bottomOffset = 0;
+		// Initialize elements.
+		this.unityContainer = document.querySelector("#unity-container");
+		this.gameCanvas = document.querySelector("#unity-canvas");
+		this.bannerElement = document.querySelector("#banner-container");
+		this.aspectRatio = 1;
+		// Fetch aspect ratio by device type.
+		if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+			// Mobile.
+			this.aspectRatio = parseFloat(mobileAspectRatio);
+		}
+		else {
+			// Desktop.
+			this.aspectRatio = parseFloat(desktopAspectRatio);
+		}
+		// Bind methods to the class instance.
+		this.update = this.update.bind(this);
+		this.resetAspectRatio = this.resetAspectRatio.bind(this);
+		this.recalculateAspectRatio = this.recalculateAspectRatio.bind(this);
+		// Subscribe to window and document events.
+		window.addEventListener("load", this.update);
+		window.addEventListener("resize", this.update);
+		document.addEventListener("readystatechange", this.update);
+		document.addEventListener("DOMContentLoaded", this.update);
+	}
 
-	function centerAlignCanvas() {
+	setRightOffset(value) {
+		this.rightOffset = value;
+	}
+
+	setBottomOffset(value) {
+		this.bottomOffset = value;
+	}
+
+	centerAlignCanvas() {
 		// Center the canvas.
-		gameCanvas.style.margin = "auto";
-		gameCanvas.style.top = "0";
-		gameCanvas.style.left = "0";
-		gameCanvas.style.bottom = "0";
-		gameCanvas.style.right = "0";
+		this.gameCanvas.style.margin = "auto";
+		this.gameCanvas.style.top = "0";
+		this.gameCanvas.style.left = "0";
+		this.gameCanvas.style.bottom = "0";
+		this.gameCanvas.style.right = "0";
 	}
 
-	function recalculateAspectRatio() {
+	resetAspectRatio() {
+		this.gameCanvas.style.width = "100%";
+		this.gameCanvas.style.height = "100%";
+		this.centerAlignCanvas();
+	}
+
+	recalculateAspectRatio() {
 		// Calculate aspect ratio.
-		let windowWidth = window.innerWidth;
-		let windowHeight = window.innerHeight;
+		let containerWidth = this.unityContainer.clientWidth;
+		let containerHeight = this.unityContainer.clientHeight;
 		// Apply aspect ratio lock with pixel-perfect size.
-		if (windowWidth / windowHeight > aspectRatio) {
-			gameCanvas.style.width = Math.floor(windowHeight * aspectRatio) + "px";
-			gameCanvas.style.height = "100%";
+		if (containerWidth / containerHeight > this.aspectRatio) {
+			this.gameCanvas.style.width = Math.floor(
+				containerHeight * this.aspectRatio) + "px";
+			this.gameCanvas.style.height = "100%";
 		} else {
-			gameCanvas.style.width = "100%";
-			gameCanvas.style.height = Math.floor(windowWidth / aspectRatio) + "px";
+			this.gameCanvas.style.width = "100%";
+			this.gameCanvas.style.height = Math.floor(
+				containerWidth / this.aspectRatio) + "px";
 		}
-		centerAlignCanvas();
+		this.centerAlignCanvas();
 	}
 
-	function resetAspectRatio() {
-		gameCanvas.style.width = "100%";
-		gameCanvas.style.height = "100%";
-		centerAlignCanvas();
-	}
-
-	function selectAspectRatio() {
-		resetAspectRatio();
+	update() {
+		// Resize the unity container.
+		if (window.innerWidth - this.rightOffset > window.innerHeight) {
+			// Landscape mode.
+			this.unityContainer.style.width = (window.innerWidth - this.rightOffset) + "px";
+			this.unityContainer.style.height = window.innerHeight + "px";
+			this.bannerElement.classList.add("landscape");
+			this.bannerElement.classList.remove("portrait");
+		}
+		else {
+			// Portrait mode.
+            this.unityContainer.style.width = window.innerWidth + "px";
+			this.unityContainer.style.height = (window.innerHeight - this.bottomOffset) + "px";
+			this.bannerElement.classList.add("portrait");
+			this.bannerElement.classList.remove("landscape");
+		}
+		// Reset aspect ratio.
+		this.resetAspectRatio();
 		// Check if aspect ratio is valid.
-		if (aspectRatio > 0) {
-			recalculateAspectRatio();
+		if (this.aspectRatio > 0) {
+			this.recalculateAspectRatio();
 		}
 	}
 
-	// Public interface.
-	return {
+}
 
-		initialize: function (mobileAspectRatio, desktopAspectRatio) {
-			// Fetch aspect ratio by device type.
-			if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-				// Mobile.
-				aspectRatio = parseFloat(mobileAspectRatio);
-			}
-			else {
-				// Desktop.
-				aspectRatio = parseFloat(desktopAspectRatio);
-			}
-			// Subscribe to window and document events.
-			window.addEventListener("load", selectAspectRatio);
-			window.addEventListener("resize", selectAspectRatio);
-			document.addEventListener("readystatechange", selectAspectRatio);
-			document.addEventListener("DOMContentLoaded", selectAspectRatio);
-		}
-
-	};
-
-})();
-
-// Self initialize aspect ratio module.
-aspectRatio.initialize(runtimeData.mobileAspectRatio, runtimeData.desktopAspectRatio);
+if (typeof window !== 'undefined') {
+	window.aspectRatio = new AspectRatio(
+		runtimeData.mobileAspectRatio,
+		runtimeData.desktopAspectRatio
+	);
+}

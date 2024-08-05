@@ -5,8 +5,8 @@ const runtimeData = (function () {
         // Basic information.
         companyName: "TappaniaGames",
         productName: "YCC",
-        productVersion: "1.41",
-        sdkVersion: "3.16.3",
+        productVersion: "1.17.1",
+        sdkVersion: "3.17.1",
         productDescription: "",
 
         // File references.
@@ -21,13 +21,22 @@ const runtimeData = (function () {
 
         // Aspect ratio.
         desktopAspectRatio: 1.666667,
-        mobileAspectRatio: 0.5630631,
+        mobileAspectRatio: 0.562,
 
         // Debug mode.
         debugMode: false,
 
         // Platform specific scripts.
         wrapperScript: "vkontakteWrapper.js",
+
+        // Yandex Ads Network.
+        yandexBannerId: "",
+        yandexInterstitialDesktopId: "",
+        yandexInterstitialMobileId: "",
+        yandexRewardedDesktopId: "",
+        yandexRewardedMobileId: "",
+
+        // GameDistribution.
         gameDistributionId: "",
         gameDistributionPrefix: "mirragames_",
 

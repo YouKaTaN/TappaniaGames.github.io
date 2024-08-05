@@ -62,6 +62,10 @@ const application = (function () {
             instance.SendMessage("JSCallbacks", methodName, stringValue);
         },
 
+        isMobile() {
+            return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        },
+
     }
 
 })();
