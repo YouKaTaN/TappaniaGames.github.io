@@ -15,10 +15,10 @@ window.addEventListener("keydown", (event) => {
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState) {
         if (document.visibilityState === "hidden") {
-            application.publishEvent("OnWebDocumentFocus", "True");
+            application.publishEvent("OnWebDocumentPause", "True");
         }
         else if (document.visibilityState === "visible") {
-            application.publishEvent("OnWebDocumentFocus", "False");
+            application.publishEvent("OnWebDocumentPause", "False");
         }
     }
 });

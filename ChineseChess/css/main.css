@@ -28,7 +28,6 @@ html, body {
 	user-select: none;
 	-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 	/* BACKGROUND BEHIND UNITY CONTAINER */
-	background-image: url("../img/background.png");
 	background-position: center center;
 	background-size: cover;
 }
@@ -78,7 +77,8 @@ img {
 	height: 256px;
 	border: 2px solid white;
 	border-bottom: 8px solid white;
-	background: url('../img/game_logo_256x256.png') no-repeat center;
+	background-repeat: no-repeat;
+	background-position: center center;
 	background-size: cover;
 }
 
