@@ -5,8 +5,8 @@ const runtimeData = (function () {
         // Basic information.
         companyName: "TappaniaGames",
         productName: "YCC",
-        productVersion: "1.17.4",
-        sdkVersion: "3.17.8",
+        productVersion: "1.17.8",
+        sdkVersion: "3.17.11",
         productDescription: "",
 
         // File references.
@@ -30,6 +30,9 @@ const runtimeData = (function () {
 
         // Debug mode.
         debugMode: false,
+
+        // Prefs.
+        prefsContainerTags: [ "json-data" ],
 
         // Platform specific scripts.
         wrapperScript: "vkontakteWrapper.js",
