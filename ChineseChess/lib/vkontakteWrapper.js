@@ -1,6 +1,7 @@
 class VkontakteWrapper {
 
 	constructor(readyCallback) {
+		this.sdk = null;
 		// Advertisement fields.
 		this.bannerVisible = false;
 		this.interstitialVisible = false;
@@ -9,26 +10,37 @@ class VkontakteWrapper {
 		this.cacheProductsData = "";
 		this.cachePaymentsData = "";
 		// Prefs fields.
-		this.jsonContainers = [
-			"json-data"
-		];
+		this.jsonContainers = runtimeData.prefsContainerTags;
 		this.cacheContainers = {};
+		// User fields.
+		this.userInfo = null;
 		// Wrapper initialization.
 		console.log("Wrapper initialization started.");
 		try {
 			let script = document.createElement("script");
 			script.src = "https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js";
 			script.onload = () => {
-				vkBridge.send('VKWebAppInit').then(() => {
-					console.log("SDK initialized successfully.");
+				this.sdk = vkBridge;
+				this.sdk.send('VKWebAppInit').then((data) => {
+					console.log("SDK initialized successfully.", data);
+					readyCallback();
+				}).catch((exception) => {
+					console.error("SDK failed to initialize.", exception);
 					readyCallback();
 				});
-				vkBridge.subscribe((event) => {
+				this.sdk.subscribe((event) => {
 					console.log('VK Bridge event', event);
 				});
 				// Send initial request to check ads availability.
-				vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'interstitial' });
-				vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'reward' });
+				this.sdk.send("VKWebAppCheckNativeAds", { ad_format: "interstitial" });
+				this.sdk.send("VKWebAppCheckNativeAds", { ad_format: "reward" });
+				// Resolve user language.
+				this.sdk.send("VKWebAppGetUserInfo").then(data => {
+					console.log("User info fetched successfully.", data);
+					this.userInfo = data;
+				}).catch(error => {
+					console.error("Error fetching user info.", error);
+				});
 			};
 			document.body.appendChild(script);
 		}
@@ -37,7 +49,7 @@ class VkontakteWrapper {
 			console.error("Wrapper initialization failed.", exception);
 			readyCallback();
 		}
-    }
+	}
 
 	// Banner advertisement methods.
 
@@ -47,17 +59,46 @@ class VkontakteWrapper {
 
 	invokeBanner() {
 		console.log("Invoke banner called.");
-
+		this.sdk.send('VKWebAppShowBannerAd', {
+			banner_location: 'bottom'
+		}).then((data) => {
+			if (data.result) {
+				console.log("Banner is shown successfully.");
+				this.isBannerVisible = true;
+			}
+		}).catch((error) => {
+			console.log("Banner failed to show.", error);
+			this.isBannerVisible = false;
+		});
 	}
 
 	disableBanner() {
 		console.log("Disable banner called.");
-
+		this.sdk.send('VKWebAppHideBannerAd').then((data) => {
+			if (data.result) {
+				console.log("Banner is disabled successfully.");
+				this.isBannerVisible = false;
+			}
+		}).catch((error) => {
+			console.log("Failed to disable banner.", error);
+		});
 	}
 
 	refreshBannerStatus() {
 		console.log("Refresh banner status called.");
-
+		this.sdk.send('VKWebAppCheckBannerAd').then((data) => {
+			if (data.result) {
+				console.log("Banner is visible.");
+				this.isBannerVisible = true;
+			}
+			else {
+				console.log("Banner is hidden.");
+				this.isBannerVisible = false;
+			}
+		}).catch((error) => {
+			console.log("Failed to resolve banner status.", error);
+			this.isBannerVisible = false;
+		});
 	}
 
 	// Interstitial advertisement methods.
@@ -74,7 +115,7 @@ class VkontakteWrapper {
 			this.interstitialVisible = true;
 			application.publishEvent("OnInterstitialEvent", "Begin");
 			// Invoke VK interstitial.
-			vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'interstitial' }).then((data) => {
+			this.sdk.send('VKWebAppShowNativeAds', { ad_format: 'interstitial' }).then((data) => {
 				if (data.result) {
 					console.log("Interstitial event: onClose.");
 					this.interstitialVisible = false;
@@ -87,14 +128,14 @@ class VkontakteWrapper {
 					reject(new Error("Interstitial ad failed to show."));
 				}
 				// Send request to check interstitial availability again.
-				vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'interstitial' });
+				this.sdk.send('VKWebAppCheckNativeAds', { ad_format: 'interstitial' });
 			}).catch((exception) => {
 				console.error("Invoke interstitial failed.", exception);
 				this.interstitialVisible = false;
 				application.publishEvent("OnInterstitialEvent", "Error");
 				reject(exception);
 				// Send request to check interstitial availability again.
-				vkBridge.send('VKWebAppCheckNativeAds', { ad_format: 'interstitial' });
+				this.sdk.send('VKWebAppCheckNativeAds', { ad_format: 'interstitial' });
 			});
 		});
 	}
@@ -113,7 +154,7 @@ class VkontakteWrapper {
 			this.rewardedVisible = true;
 			application.publishEvent("OnRewardedEvent", "Begin");
 			// Invoke VK rewarded.
-			vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' }).then((data) => {
+			this.sdk.send('VKWebAppShowNativeAds', { ad_format: 'reward' }).then((data) => {
 				if (data.result) {
 					console.log("Rewarded watched successfully.");
 					this.rewardedVisible = false;
@@ -169,12 +210,52 @@ class VkontakteWrapper {
 
 	resolveSaves() {
 		console.log("Saves resolving started.");
-
+		return new Promise((resolve, reject) => {
+			this.sdk.send('VKWebAppStorageGet', {
+				keys: this.jsonContainers
+			}).then((data) => {
+				if (data.keys) {
+					console.log("Saves resolved successfully.");
+					for (let i = 0; i < data.keys.length; i++) {
+						let key = data.keys[i];
+						let value = data.values[i];
+						this.cacheContainers[key] = value;
+					}
+					resolve(data);
+				}
+				else {
+					console.error("Failed to resolve saves.");
+					reject();
+				}
+			}).catch((exception) => {
+				console.error("Failed to resolve saves.", exception);
+				reject(exception);
+			});
+		});
 	}
 
 	writeSaves() {
 		console.log("Write saves called.");
-
+		return new Promise((resolve, reject) => {
+			for (let x = 0; x < this.jsonContainers.length; x++) {
+				bridge.send('VKWebAppStorageSet', {
+					key: this.jsonContainers[x],
+					value: this.cacheContainers[this.jsonContainers[x]]
+				}).then((data) => {
+					if (data.result) {
+						console.log(`Contaiener with key ${this.jsonContainers[x]} written successfully.`);
+						resolve(data);
+					}
+					else {
+						console.error("Something went wrong while writing saves.");
+						reject();
+					}
+				}).catch((exception) => {
+					console.error("Failed to write saves.", exception);
+					reject(exception);
+				});
+			}
+		});
 	}
 
 	resolveCacheSaves(containerTag) {
@@ -199,15 +280,53 @@ class VkontakteWrapper {
 
 	// Language methods.
 
+	#languageCodes = {
+		0: "ru",    // Russian
+		3: "en",    // English
+		20: "ja",   // Japanese
+		18: "zh",   // Chinese
+		82: "tr",   // Turkish
+		76: "hi",   // Hindi
+		17: "ko",   // Korean
+		12: "pt",   // Portuguese
+		69: "id",   // Indonesian
+		6: "de",    // German
+		4: "es",    // Spanish
+		7: "it",    // Italian
+		1: "uk",    // Ukrainian
+		15: "pl",   // Polish
+		16: "fr"    // French
+	};
+
 	resolveLanguage() {
 		console.log("Resolve language called.");
 		try {
-			return "ru";
+			let windowURL = new URL(window.location.href);
+			let languageValue = windowURL.searchParams.get("language");
+			let languageCode = parseInt(languageValue);
+			return this.#languageCodes[languageCode];
 		}
 		catch (exception) {
-			console.error("Resolve language failed.", exception);
-			return "en";
+			return this.#languageCodes[0];
 		}
+	}
+
+	// Socials support.
+
+	shareThisGame() {
+		console.log("Share this game called.");
+		this.sdk.send('VKWebAppShare', {
+			link: window.location.origin + window.location.pathname
+		}).then((data) => {
+			if (data.result) {
+				console.log("Game shared successfully.");
+			}
+			else {
+				console.error("Failed to share game.");
+			}
+		}).catch((exception) => {
+			console.error("Failed to share game.", exception);
+		});
 	}
 
 }
