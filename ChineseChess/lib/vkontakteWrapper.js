@@ -23,7 +23,9 @@ class VkontakteWrapper {
 				this.sdk = vkBridge;
 				this.sdk.send('VKWebAppInit').then((data) => {
 					console.log("SDK initialized successfully.", data);
-					readyCallback();
+					this.resolveSaves().then(() => {
+						readyCallback();
+					});
 				}).catch((exception) => {
 					console.error("SDK failed to initialize.", exception);
 					readyCallback();
@@ -215,20 +217,22 @@ class VkontakteWrapper {
 				keys: this.jsonContainers
 			}).then((data) => {
 				if (data.keys) {
-					console.log("Saves resolved successfully.");
 					for (let i = 0; i < data.keys.length; i++) {
-						let key = data.keys[i];
-						let value = data.values[i];
-						this.cacheContainers[key] = value;
+						let keyValuePair = data.keys[i];
+						this.cacheContainers[keyValuePair.key] = keyValuePair.value;
 					}
+					console.log("Saves resolving success.");
+					application.publishEvent("OnResolveSaves", "Success");
 					resolve(data);
 				}
 				else {
-					console.error("Failed to resolve saves.");
+					console.error("Saves resolving failed.");
+					application.publishEvent("OnResolveSaves", "Error");
 					reject();
 				}
 			}).catch((exception) => {
-				console.error("Failed to resolve saves.", exception);
+				console.error("Saves resolving failed.", exception);
+				application.publishEvent("OnResolveSaves", "Error");
 				reject(exception);
 			});
 		});
@@ -238,20 +242,23 @@ class VkontakteWrapper {
 		console.log("Write saves called.");
 		return new Promise((resolve, reject) => {
 			for (let x = 0; x < this.jsonContainers.length; x++) {
-				bridge.send('VKWebAppStorageSet', {
+				this.sdk.send('VKWebAppStorageSet', {
 					key: this.jsonContainers[x],
 					value: this.cacheContainers[this.jsonContainers[x]]
 				}).then((data) => {
 					if (data.result) {
 						console.log(`Contaiener with key ${this.jsonContainers[x]} written successfully.`);
+						application.publishEvent("OnWriteSaves", "Success");
 						resolve(data);
 					}
 					else {
 						console.error("Something went wrong while writing saves.");
+						application.publishEvent("OnWriteSaves", "Error");
 						reject();
 					}
 				}).catch((exception) => {
 					console.error("Failed to write saves.", exception);
+					application.publishEvent("OnWriteSaves", "Error");
 					reject(exception);
 				});
 			}
@@ -302,12 +309,22 @@ class VkontakteWrapper {
 		console.log("Resolve language called.");
 		try {
 			let windowURL = new URL(window.location.href);
-			let languageValue = windowURL.searchParams.get("language");
-			let languageCode = parseInt(languageValue);
-			return this.#languageCodes[languageCode];
+			if (windowURL.searchParams.has("language")) {
+				let languageValue = windowURL.searchParams.get("language");
+				let languageCode = parseInt(languageValue);
+				return this.#languageCodes[languageCode];
+			}
+			else if (windowURL.searchParams.has("vk_language")) {
+				let languageValue = windowURL.searchParams.get("vk_language");
+				return languageValue;
+			}
+			else {
+				return "ru";
+			}
 		}
 		catch (exception) {
-			return this.#languageCodes[0];
+			console.error("Failed to resolve language.", exception);
+			return "ru";
 		}
 	}
 
