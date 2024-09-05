@@ -333,7 +333,7 @@ class VkontakteWrapper {
 	shareThisGame() {
 		console.log("Share this game called.");
 		this.sdk.send('VKWebAppShare', {
-			link: window.location.origin + window.location.pathname
+			link: "https://vk.com/app52050091" //window.location.origin + window.location.pathname
 		}).then((data) => {
 			if (data.result) {
 				console.log("Game shared successfully.");
