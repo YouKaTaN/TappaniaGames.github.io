@@ -5,7 +5,7 @@ const runtimeData = (function () {
         // Basic information.
         companyName: "TappaniaGames",
         productName: "YCC",
-        productVersion: "1.17.12",
+        productVersion: "1.17.13",
         sdkVersion: "3.17.15",
         productDescription: "",
 
